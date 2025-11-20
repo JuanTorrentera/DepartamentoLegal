@@ -2,9 +2,6 @@ fastapi
 uvicorn
 llama-index
 llama-index-llms-groq
-llama-index-embeddings-huggingface
+llama-index-embeddings-fireworks
 pypdf
 python-dotenv
-transformers
-torch
-sentence-transformers

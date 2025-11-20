@@ -5,7 +5,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from llama_index.core import Document, Settings, VectorStoreIndex
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.fireworks import FireworksEmbedding
 from llama_index.llms.groq import Groq
 from pypdf import PdfReader
 
@@ -14,9 +14,7 @@ from pypdf import PdfReader
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuración del modelo de embedding y el LLM
-# Usaremos un modelo de embedding local y Groq como LLM
-EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+# Configuración del modelo LLM
 LLM_MODEL_NAME = "llama3-8b-8192"  # Modelo rápido y capaz de Groq
 
 # Ruta al documento PDF
@@ -63,19 +61,25 @@ def startup_event():
     global query_engine
     logger.info("Iniciando la aplicación...")
 
-    # Verificar si la API key de Groq está disponible
+    # Verificar si las claves de API están disponibles
     groq_api_key = os.environ.get("GROQ_API_KEY")
+    fireworks_api_key = os.environ.get("FIREWORKS_API_KEY")
+
     if not groq_api_key:
         logger.error("La variable de entorno GROQ_API_KEY no está configurada.")
         raise ValueError("Debes configurar la variable de entorno GROQ_API_KEY.")
+
+    if not fireworks_api_key:
+        logger.error("La variable de entorno FIREWORKS_API_KEY no está configurada.")
+        raise ValueError("Debes configurar la variable de entorno FIREWORKS_API_KEY.")
 
     # Configurar el LLM con Groq
     Settings.llm = Groq(model=LLM_MODEL_NAME, api_key=groq_api_key)
     logger.info(f"LLM configurado con el modelo: {LLM_MODEL_NAME}")
 
-    # Configurar el modelo de embedding
-    Settings.embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL_NAME)
-    logger.info(f"Modelo de embedding configurado: {EMBEDDING_MODEL_NAME}")
+    # Configurar el modelo de embedding con Fireworks
+    Settings.embed_model = FireworksEmbedding(api_key=fireworks_api_key)
+    logger.info("Modelo de embedding configurado con Fireworks.")
 
     # Cargar los documentos del PDF
     documents = load_pdf_documents(PDF_PATH)
@@ -132,12 +136,16 @@ async def handle_query(request: Request, question: str = Form(...)):
 if __name__ == "__main__":
     import uvicorn
 
-    # Imprimir advertencia sobre la API Key
-    if not os.environ.get("GROQ_API_KEY"):
+    # Imprimir advertencia sobre las API Keys
+    if not os.environ.get("GROQ_API_KEY") or not os.environ.get("FIREWORKS_API_KEY"):
         print("\n" + "=" * 50)
-        print("ADVERTENCIA: La variable de entorno GROQ_API_KEY no está configurada.")
+        print(
+            "ADVERTENCIA: Una o más variables de entorno de API no están configuradas."
+        )
         print("El programa intentará ejecutarse, pero fallará al iniciar.")
-        print("Crea un archivo .env y añade: GROQ_API_KEY='TU_API_KEY'")
+        print(
+            "Asegúrate de tener un archivo .env con GROQ_API_KEY y FIREWORKS_API_KEY."
+        )
         print("=" * 50 + "\n")
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
