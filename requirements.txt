@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+llama-index
+llama-index-llms-groq
+llama-index-embeddings-huggingface
+pypdf
+python-dotenv
+transformers
+torch
+sentence-transformers
